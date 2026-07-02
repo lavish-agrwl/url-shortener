@@ -5,8 +5,8 @@
 - [x] Initialize the Node.js project skeleton for the Express API and dashboard entry points.
 - [x] Add shared environment configuration and validation for the SRS-required variables.
 - [x] Add Docker Compose for the app, Redis 7, MongoDB 7, and Bull Board.
-- [ ] Add the base Express middleware stack: Helmet, production CORS restriction, and request logging.
-- [ ] Add the `/health` endpoint with Redis and MongoDB connectivity checks plus queue depth.
+- [x] Add the base Express middleware stack: Helmet, production CORS restriction, and request logging.
+- [x] Add the `/health` endpoint with Redis and MongoDB connectivity checks plus queue depth.
 
 ## Phase 2: Core Models
 
