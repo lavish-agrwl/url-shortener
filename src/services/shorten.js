@@ -2,8 +2,27 @@ const { createUrl, findUrlBySlug } = require("../data");
 const { generateDefaultSlug, generateUniqueSlug } = require("../utils/slug");
 const { parseShortenRequest } = require("../validation/shortenRequest");
 
+const REDIRECT_CACHE_TTL_SECONDS = 24 * 60 * 60;
+
 function toIsoString(date) {
   return date ? new Date(date).toISOString() : null;
+}
+
+async function cacheShortUrl(cacheClient, slug, originalUrl) {
+  if (!cacheClient) {
+    return;
+  }
+
+  try {
+    await cacheClient.set(
+      `url:${slug}`,
+      originalUrl,
+      "EX",
+      REDIRECT_CACHE_TTL_SECONDS,
+    );
+  } catch (_err) {
+    // Cache is best-effort; MongoDB remains the source of truth.
+  }
 }
 
 async function createShortUrl(payload, options = {}) {
@@ -28,6 +47,12 @@ async function createShortUrl(payload, options = {}) {
       createdBy,
     });
 
+    await cacheShortUrl(
+      options.cacheClient,
+      createdUrl.slug,
+      createdUrl.originalUrl,
+    );
+
     return {
       slug: createdUrl.slug,
       shortUrl: `${options.baseUrl || ""}/${createdUrl.slug}`,
@@ -49,4 +74,6 @@ async function createShortUrl(payload, options = {}) {
 module.exports = {
   createShortUrl,
   generateDefaultSlug,
+  cacheShortUrl,
+  REDIRECT_CACHE_TTL_SECONDS,
 };

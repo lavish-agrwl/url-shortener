@@ -6,6 +6,7 @@ const morgan = require("morgan");
 const { loadEnv } = require("../src/config/env");
 const { getHealthStatus } = require("../src/services/health");
 const { createShortUrl } = require("../src/services/shorten");
+const { getRedisClient } = require("../src/services/redisClient");
 
 let env;
 try {
@@ -23,6 +24,7 @@ try {
 }
 
 const app = express();
+const redisClient = getRedisClient(env.REDIS_URL);
 
 app.use(helmet());
 app.use(express.json());
@@ -42,6 +44,7 @@ app.post("/api/shorten", async (req, res) => {
     const shortened = await createShortUrl(req.body, {
       baseUrl: env.BASE_URL,
       now: new Date(),
+      cacheClient: redisClient,
     });
 
     res.status(201).json(shortened);
