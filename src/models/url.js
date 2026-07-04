@@ -32,13 +32,13 @@ const urlSchema = new mongoose.Schema(
   {
     versionKey: false,
     timestamps: { createdAt: "createdAt", updatedAt: false },
-  }
+  },
 );
 
 urlSchema.index({ slug: 1 }, { unique: true, name: "urls_slug_unique" });
 urlSchema.index(
   { expiresAt: 1 },
-  { expireAfterSeconds: 0, name: "urls_expiresAt_ttl", sparse: true }
+  { expireAfterSeconds: 0, name: "urls_expiresAt_ttl", sparse: true },
 );
 
 module.exports = mongoose.models.Url || mongoose.model("Url", urlSchema);
