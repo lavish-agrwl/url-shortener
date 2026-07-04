@@ -5,6 +5,7 @@ const morgan = require("morgan");
 
 const { loadEnv } = require("../src/config/env");
 const { getHealthStatus } = require("../src/services/health");
+const { createShortUrl } = require("../src/services/shorten");
 
 let env;
 try {
@@ -24,6 +25,7 @@ try {
 const app = express();
 
 app.use(helmet());
+app.use(express.json());
 
 if (env.NODE_ENV === "production") {
   app.use(cors({ origin: env.BASE_URL }));
@@ -34,6 +36,34 @@ if (env.NODE_ENV === "production") {
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 
 app.get("/", (req, res) => res.json({ status: "ok" }));
+
+app.post("/api/shorten", async (req, res) => {
+  try {
+    const shortened = await createShortUrl(req.body, {
+      baseUrl: env.BASE_URL,
+      now: new Date(),
+    });
+
+    res.status(201).json(shortened);
+  } catch (err) {
+    if (err && err.name === "ZodError") {
+      return res.status(400).json({
+        error: "Invalid request body",
+        issues: err.issues,
+      });
+    }
+
+    if (err && err.statusCode === 409) {
+      return res.status(409).json({
+        error: "Custom slug already taken",
+      });
+    }
+
+    res.status(500).json({
+      error: "Failed to shorten URL",
+    });
+  }
+});
 
 app.get("/health", async (req, res) => {
   try {
