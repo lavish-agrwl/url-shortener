@@ -16,7 +16,7 @@
 
 ## Phase 3: URL Shortening API
 
-- [ ] Implement Zod validation for shorten requests, including long URL, optional custom slug, and optional expiry.
+- [x] Implement Zod validation for shorten requests, including long URL, optional custom slug, and optional expiry.
 - [ ] Implement default slug generation with Base62 encoding and collision retry behavior.
 - [ ] Implement `POST /api/shorten` to create URL records and return the shortened URL payload.
 - [ ] Cache newly created URLs in Redis with the required redirect TTL.
