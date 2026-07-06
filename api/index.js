@@ -8,7 +8,16 @@ const { getHealthStatus } = require("../src/services/health");
 const { createShortUrl } = require("../src/services/shorten");
 const { getRedirectUrl } = require("../src/services/redirect");
 const { getRedisClient } = require("../src/services/redisClient");
-const { getQueue, enqueueClick } = require("../src/services/queue");
+const {
+  getQueue,
+  enqueueClick,
+  getClientIp,
+} = require("../src/services/queue");
+const {
+  checkRateLimit,
+  setRateLimitHeaders,
+  RATE_LIMITS,
+} = require("../src/services/rateLimiter");
 
 let env;
 try {
@@ -48,10 +57,26 @@ app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 app.get("/", (req, res) => res.json({ status: "ok" }));
 
 app.post("/api/shorten", async (req, res) => {
+  const clientIp = getClientIp(req);
+  const now = new Date();
+  const rateLimitResult = await checkRateLimit(
+    redisClient,
+    clientIp,
+    "shorten",
+    RATE_LIMITS.shorten.limit,
+    now,
+  );
+
+  setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.shorten.limit);
+
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
+  }
+
   try {
     const shortened = await createShortUrl(req.body, {
       baseUrl: env.BASE_URL,
-      now: new Date(),
+      now,
       cacheClient: redisClient,
     });
 
@@ -94,6 +119,22 @@ app.get("/health", async (req, res) => {
 });
 
 app.get("/:slug", async (req, res) => {
+  const clientIp = getClientIp(req);
+  const now = new Date();
+  const rateLimitResult = await checkRateLimit(
+    redisClient,
+    clientIp,
+    "redirect",
+    RATE_LIMITS.redirect.limit,
+    now,
+  );
+
+  setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.redirect.limit);
+
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
+  }
+
   try {
     const { slug } = req.params;
     const originalUrl = await getRedirectUrl(slug, redisClient);
