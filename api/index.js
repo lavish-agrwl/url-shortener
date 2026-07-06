@@ -8,6 +8,7 @@ const { getHealthStatus } = require("../src/services/health");
 const { createShortUrl } = require("../src/services/shorten");
 const { getRedirectUrl } = require("../src/services/redirect");
 const { getRedisClient } = require("../src/services/redisClient");
+const { getQueue, enqueueClick } = require("../src/services/queue");
 
 let env;
 try {
@@ -26,6 +27,12 @@ try {
 
 const app = express();
 const redisClient = getRedisClient(env.REDIS_URL);
+// Extract Redis connection from URL for BullMQ
+const redisUrl = new URL(env.REDIS_URL);
+const clickQueue = getQueue("click-events", {
+  host: redisUrl.hostname || "127.0.0.1",
+  port: parseInt(redisUrl.port || "6379", 10),
+});
 
 app.use(helmet());
 app.use(express.json());
@@ -94,6 +101,9 @@ app.get("/:slug", async (req, res) => {
     if (!originalUrl) {
       return res.status(404).json({ error: "Slug not found or expired" });
     }
+
+    // Enqueue click event asynchronously (fire-and-forget, non-blocking)
+    enqueueClick(clickQueue, slug, req);
 
     res.redirect(301, originalUrl);
   } catch (err) {
