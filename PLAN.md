@@ -24,7 +24,7 @@
 ## Phase 4: Redirect Path
 
 - [x] Implement Redis-first lookup for `GET /:slug` with MongoDB fallback and cache repopulation.
-- [ ] Add soft-expiry handling so expired URLs return `404` even if a stale Redis entry exists.
+- [x] Add soft-expiry handling so expired URLs return `404` even if a stale Redis entry exists.
 - [ ] Enqueue click events asynchronously on successful redirects without blocking the response.
 - [ ] Apply the redirect rate limit and return the required rate-limit headers and `429` response.
 

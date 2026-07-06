@@ -8,15 +8,19 @@ function toIsoString(date) {
   return date ? new Date(date).toISOString() : null;
 }
 
-async function cacheShortUrl(cacheClient, slug, originalUrl) {
+async function cacheShortUrl(cacheClient, slug, originalUrl, expiresAt) {
   if (!cacheClient) {
     return;
   }
 
   try {
+    const metadata = {
+      originalUrl,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    };
     await cacheClient.set(
       `url:${slug}`,
-      originalUrl,
+      JSON.stringify(metadata),
       "EX",
       REDIRECT_CACHE_TTL_SECONDS,
     );
@@ -51,6 +55,7 @@ async function createShortUrl(payload, options = {}) {
       options.cacheClient,
       createdUrl.slug,
       createdUrl.originalUrl,
+      createdUrl.expiresAt,
     );
 
     return {
