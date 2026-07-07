@@ -9,6 +9,7 @@
   <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
   <!-- Babel for JSX transformation -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {font-family: Arial, sans-serif; margin: 2rem;}
     .form-group {margin-bottom: 1rem;}
@@ -22,7 +23,7 @@
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState } = React;
+    const { useState, useEffect, useRef } = React;
 
     // Shorten form component (only)
     function ShortenForm() {
@@ -86,11 +87,13 @@
       );
     }
 
-    // Analytics summary component (without chart)
+    // Analytics view component with chart
     function AnalyticsSummary() {
       const [slug, setSlug] = useState('');
       const [data, setData] = useState(null);
       const [error, setError] = useState(null);
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
 
       const loadData = async () => {
         setError(null);
@@ -108,6 +111,38 @@
         }
       };
 
+      // Render chart when data changes
+      useEffect(() => {
+        if (!data) return;
+        const ctx = chartRef.current?.getContext('2d');
+        if (!ctx) return;
+        const labels = data.clicksPerDay.map(d => d.date);
+        const values = data.clicksPerDay.map(d => d.count);
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+        chartInstance.current = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Clicks per day',
+              data: values,
+              borderColor: 'rgba(75,192,192,1)',
+              backgroundColor: 'rgba(75,192,192,0.2)',
+              fill: true,
+            }],
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { title: { display: true, text: 'Date' } },
+              y: { title: { display: true, text: 'Clicks' }, beginAtZero: true },
+            },
+          },
+        });
+      }, [data]);
+
       const topRef = data && data.topReferrers && data.topReferrers[0] ? data.topReferrers[0].referrer : 'N/A';
 
       return (
@@ -120,20 +155,24 @@
           </div>
           {error && <p style={{color: 'red'}}>{error}</p>}
           {data && (
-            <div className="cards">
-              <div className="card">
-                <h3>Total Clicks</h3>
-                <p>{data.totalClicks}</p>
+            <div>
+              <div className="cards">
+                <div className="card">
+                  <h3>Total Clicks</h3>
+                  <p>{data.totalClicks}</p>
+                </div>
+                <div className="card">
+                  <h3>Top Referrer</h3>
+                  <p>{topRef}</p>
+                </div>
+                <div className="card">
+                  <h3>Date Created</h3>
+                  {/* createdAt not provided by analytics endpoint; showing N/A */}
+                  <p>N/A</p>
+                </div>
               </div>
-              <div className="card">
-                <h3>Top Referrer</h3>
-                <p>{topRef}</p>
-              </div>
-              <div className="card">
-                <h3>Date Created</h3>
-                {/* createdAt not provided by analytics endpoint; showing N/A */}
-                <p>N/A</p>
-              </div>
+              <h3>Clicks per Day</h3>
+              <canvas ref={chartRef}></canvas>
             </div>
           )}
         </div>
