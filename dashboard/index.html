@@ -86,12 +86,67 @@
       );
     }
 
+    // Analytics summary component (without chart)
+    function AnalyticsSummary() {
+      const [slug, setSlug] = useState('');
+      const [data, setData] = useState(null);
+      const [error, setError] = useState(null);
+
+      const loadData = async () => {
+        setError(null);
+        setData(null);
+        try {
+          const resp = await fetch(`/api/analytics/${slug}`);
+          const json = await resp.json();
+          if (!resp.ok) {
+            setError(json.error || 'Failed to load analytics');
+          } else {
+            setData(json);
+          }
+        } catch (e) {
+          setError('Network error');
+        }
+      };
+
+      const topRef = data && data.topReferrers && data.topReferrers[0] ? data.topReferrers[0].referrer : 'N/A';
+
+      return (
+        <div>
+          <h2>Analytics</h2>
+          <div className="form-group">
+            <label>Slug</label>
+            <input type="text" value={slug} onChange={e => setSlug(e.target.value)} />
+            <button onClick={loadData}>Load</button>
+          </div>
+          {error && <p style={{color: 'red'}}>{error}</p>}
+          {data && (
+            <div className="cards">
+              <div className="card">
+                <h3>Total Clicks</h3>
+                <p>{data.totalClicks}</p>
+              </div>
+              <div className="card">
+                <h3>Top Referrer</h3>
+                <p>{topRef}</p>
+              </div>
+              <div className="card">
+                <h3>Date Created</h3>
+                {/* createdAt not provided by analytics endpoint; showing N/A */}
+                <p>N/A</p>
+              </div>
+            </div>
+          )}
+        </div>
+      );
+    }
+
     function App() {
       return (
         <div>
           <h1>URL Shortener Dashboard</h1>
           <ShortenForm />
-          {/* Analytics view will be added in a later commit */}
+          {/* Analytics summary added */}
+          <AnalyticsSummary />
         </div>
       );
     }
