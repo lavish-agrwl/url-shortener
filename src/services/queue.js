@@ -1,6 +1,6 @@
 const { Queue } = require("bullmq");
-const { getRedisClient } = require("./redisClient");
 const crypto = require("crypto");
+const { buildClickEventPayload } = require("../validation/clickEvent");
 
 const queues = new Map();
 
@@ -68,23 +68,23 @@ async function enqueueClick(queue, slug, req, timestamp = new Date()) {
   const ipHash = hashIp(clientIp);
   const userAgent = req.headers["user-agent"] || "";
   const referrer = req.headers["referer"] || null;
+  const country = req.headers["x-vercel-ip-country"] || null;
 
   try {
     // Fire-and-forget: don't await, add to queue without blocking
-    queue.add(
-      "click",
-      {
-        slug,
-        timestamp: timestamp.toISOString(),
-        ipHash,
-        userAgent,
-        referrer,
-      },
-      {
-        // Unique job ID per slug+timestamp to prevent duplicates
-        jobId: `${slug}-${timestamp.getTime()}`,
-      },
-    );
+    const payload = buildClickEventPayload({
+      slug,
+      timestamp,
+      ipHash,
+      userAgent,
+      referrer,
+      country,
+    });
+
+    queue.add("click", payload, {
+      // Unique job ID per slug+timestamp to prevent duplicates
+      jobId: `${slug}-${timestamp.getTime()}`,
+    });
   } catch (err) {
     // Queue enqueue failure is non-critical; log and continue
     console.error("Failed to enqueue click event:", err);

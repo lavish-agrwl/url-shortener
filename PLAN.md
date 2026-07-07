@@ -30,7 +30,7 @@
 
 ## Phase 5: Click Ingestion Pipeline
 
-- [ ] Define the click event payload with slug, timestamp, hashed IP, user-agent, referrer, and country.
+- [x] Define the click event payload with slug, timestamp, hashed IP, user-agent, referrer, and country.
 - [ ] Implement the BullMQ click-events queue with the required retry and backoff settings.
 - [ ] Implement the batch worker that flushes clicks in groups of 50 or every 5 seconds, whichever comes first.
 - [ ] Update URL click counters during batch flush using bulk MongoDB writes.
