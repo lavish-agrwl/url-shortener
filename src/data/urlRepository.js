@@ -23,9 +23,25 @@ async function incrementUrlClicks(slug, incrementBy = 1) {
   return Url.updateOne({ slug }, { $inc: { totalClicks: incrementBy } });
 }
 
+async function bulkIncrementUrlClicks(clickCounts) {
+  if (!Array.isArray(clickCounts) || clickCounts.length === 0) {
+    return { acknowledged: true, modifiedCount: 0 };
+  }
+
+  return Url.bulkWrite(
+    clickCounts.map(({ slug, count }) => ({
+      updateOne: {
+        filter: { slug },
+        update: { $inc: { totalClicks: count } },
+      },
+    })),
+  );
+}
+
 module.exports = {
   createUrl,
   findUrlBySlug,
   findActiveUrlBySlug,
   incrementUrlClicks,
+  bulkIncrementUrlClicks,
 };

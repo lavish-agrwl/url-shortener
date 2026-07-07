@@ -1,5 +1,5 @@
 const { Worker } = require("bullmq");
-const { createClicksBatch } = require("../data");
+const { bulkIncrementUrlClicks, createClicksBatch } = require("../data");
 
 const DEFAULT_BATCH_SIZE = 50;
 const DEFAULT_FLUSH_INTERVAL_MS = 5000;
@@ -23,7 +23,10 @@ async function flushBatch(state) {
   state.lastFlushAt = Date.now();
 
   try {
-    await createClicksBatch(batch.map(({ data }) => data));
+    const clicks = batch.map(({ data }) => data);
+    await createClicksBatch(clicks);
+    await bulkIncrementUrlClicks(countClicksBySlug(clicks));
+
     for (const entry of batch) {
       entry.resolve({ flushed: true });
     }
@@ -34,6 +37,19 @@ async function flushBatch(state) {
   } finally {
     state.flushInProgress = false;
   }
+}
+
+function countClicksBySlug(clicks) {
+  const clickCounts = new Map();
+
+  for (const click of clicks) {
+    clickCounts.set(click.slug, (clickCounts.get(click.slug) || 0) + 1);
+  }
+
+  return Array.from(clickCounts.entries()).map(([slug, count]) => ({
+    slug,
+    count,
+  }));
 }
 
 function scheduleFlush(state, flushIntervalMs) {
