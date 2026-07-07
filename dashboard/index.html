@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>URL Shortener Dashboard</title>
+  <!-- React and ReactDOM via CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <!-- Babel for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; margin: 2rem;}
+    .card {border: 1px solid #ddd; border-radius: 8px; padding: 1rem; margin: 0.5rem;}
+    .cards {display: flex; flex-wrap: wrap; gap: 1rem;}
+    .cards .card {flex: 1 1 200px;}
+    .form-group {margin-bottom: 1rem;}
+    label {display: block; margin-bottom: 0.5rem;}
+    input, button {padding: 0.5rem; width: 100%;}
+    button {cursor: pointer;}
+    .result {margin-top: 1rem;}
+    canvas {max-width: 100%; height: 300px;}
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // Shorten form component
+    function ShortenForm() {
+      const [url, setUrl] = useState('');
+      const [customSlug, setCustomSlug] = useState('');
+      const [expiresAt, setExpiresAt] = useState('');
+      const [result, setResult] = useState(null);
+      const [error, setError] = useState(null);
+
+      const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError(null);
+        setResult(null);
+        const payload = { url };
+        if (customSlug) payload.customSlug = customSlug;
+        if (expiresAt) payload.expiresAt = expiresAt;
+        try {
+          const resp = await fetch('/api/shorten', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          const data = await resp.json();
+          if (!resp.ok) {
+            setError(data.error || 'Failed to shorten');
+          } else {
+            setResult(data);
+          }
+        } catch (e) {
+          setError('Network error');
+        }
+      };
+
+      return (
+        <div>
+          <h2>Shorten a URL</h2>
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label>Long URL</label>
+              <input type="url" required value={url} onChange={e => setUrl(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Custom slug (optional)</label>
+              <input type="text" value={customSlug} onChange={e => setCustomSlug(e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Expiry (ISO date, optional)</label>
+              <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
+            </div>
+            <button type="submit">Shorten</button>
+          </form>
+          {error && <p style={{color: 'red'}}>{error}</p>}
+          {result && (
+            <div className="result">
+              <p>Short URL: <a href={result.shortUrl} target="_blank" rel="noopener noreferrer">{result.shortUrl}</a></p>
+              <p>Created at: {new Date(result.createdAt).toLocaleString()}</p>
+              {result.expiresAt && <p>Expires at: {new Date(result.expiresAt).toLocaleString()}</p>}
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Analytics view component
+    function AnalyticsView() {
+      const [slug, setSlug] = useState('');
+      const [analytics, setAnalytics] = useState(null);
+      const [error, setError] = useState(null);
+      const chartRef = useRef(null);
+      const chartInstance = useRef(null);
+
+      const fetchAnalytics = async () => {
+        setError(null);
+        setAnalytics(null);
+        try {
+          const resp = await fetch(`/api/analytics/${slug}`);
+          const data = await resp.json();
+          if (!resp.ok) {
+            setError(data.error || 'Failed to load analytics');
+          } else {
+            setAnalytics(data);
+          }
+        } catch (e) {
+          setError('Network error');
+        }
+      };
+
+      // Render chart whenever analytics data changes
+      useEffect(() => {
+        if (!analytics) return;
+        const ctx = chartRef.current.getContext('2d');
+        const labels = analytics.clicksPerDay.map(d => d.date);
+        const values = analytics.clicksPerDay.map(d => d.count);
+        // Destroy previous chart if exists
+        if (chartInstance.current) {
+          chartInstance.current.destroy();
+        }
+        chartInstance.current = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [{
+              label: 'Clicks per day',
+              data: values,
+              borderColor: 'rgba(75,192,192,1)',
+              backgroundColor: 'rgba(75,192,192,0.2)',
+              fill: true,
+            }]
+          },
+          options: {
+            responsive: true,
+            scales: {
+              x: { title: { display: true, text: 'Date' } },
+              y: { title: { display: true, text: 'Clicks' }, beginAtZero: true }
+            }
+          }
+        });
+      }, [analytics]);
+
+      const topRef = analytics && analytics.topReferrers && analytics.topReferrers[0] ? analytics.topReferrers[0].referrer : 'N/A';
+
+      return (
+        <div>
+          <h2>Analytics</h2>
+          <div className="form-group">
+            <label>Slug</label>
+            <input type="text" value={slug} onChange={e => setSlug(e.target.value)} />
+            <button onClick={fetchAnalytics}>Load</button>
+          </div>
+          {error && <p style={{color: 'red'}}>{error}</p>}
+          {analytics && (
+            <div>
+              <div className="cards">
+                <div className="card">
+                  <h3>Total Clicks</h3>
+                  <p>{analytics.totalClicks}</p>
+                </div>
+                <div className="card">
+                  <h3>Top Referrer</h3>
+                  <p>{topRef}</p>
+                </div>
+                <div className="card">
+                  <h3>Date Created</h3>
+                  <p>{new Date(analytics.createdAt || Date.now()).toLocaleString()}</p>
+                </div>
+              </div>
+              <h3>Clicks per Day</h3>
+              <canvas ref={chartRef}></canvas>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function App() {
+      return (
+        <div>
+          <h1>URL Shortener Dashboard</h1>
+          <ShortenForm />
+          <hr />
+          <AnalyticsView />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
