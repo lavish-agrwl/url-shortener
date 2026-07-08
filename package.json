@@ -21,7 +21,6 @@
   },
   "devDependencies": {
     "supertest": "^6.3.4",
-    "supertest": "^6.3.4",
     "mongodb-memory-server": "^9.6.2",
     "ioredis-mock": "^0.6.0"
 
