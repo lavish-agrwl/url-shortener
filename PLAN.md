@@ -44,9 +44,9 @@
 
 ## Phase 7: Frontend Dashboard
 
-- [ ] Build the shorten form and result display for the dashboard.
-- [ ] Build the analytics summary cards for total clicks, top referrer, and date created.
-- [ ] Build the Chart.js clicks-per-day line chart for a slug.
+- [x] Build the shorten form and result display for the dashboard.
+- [x] Build the analytics summary cards for total clicks, top referrer, and date created.
+- [x] Build the Chart.js clicks-per-day line chart for a slug.
 
 ## Phase 8: Testing and Delivery
 
