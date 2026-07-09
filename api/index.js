@@ -2,6 +2,7 @@ const express = require("express");
 const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
+const mongoose = require("mongoose");
 
 const { loadEnv } = require("../src/config/env");
 const { getHealthStatus } = require("../src/services/health");
@@ -178,6 +179,13 @@ app.get("/:slug", async (req, res) => {
 
 const port = process.env.PORT || 3000;
 
-app.listen(port, () => {
-  console.log(`API listening on ${port} (env=${env.NODE_ENV})`);
-});
+mongoose.connect(env.MONGODB_URI)
+  .then(() => {
+    app.listen(port, () => {
+      console.log(`API listening on ${port} (env=${env.NODE_ENV})`);
+    });
+  })
+  .catch((err) => {
+    console.error("Failed to connect to MongoDB:", err);
+    process.exit(1);
+  });
