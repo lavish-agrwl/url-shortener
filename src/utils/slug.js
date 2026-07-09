@@ -26,7 +26,8 @@ function generateDefaultSlug(objectId = new mongoose.Types.ObjectId()) {
   const objectIdHex = objectId.toHexString();
   const objectIdAsBigInt = BigInt(`0x${objectIdHex}`);
 
-  return encodeBase62(objectIdAsBigInt).slice(0, DEFAULT_SLUG_LENGTH);
+  const encoded = encodeBase62(objectIdAsBigInt);
+  return encoded.padStart(DEFAULT_SLUG_LENGTH, BASE62_ALPHABET[0]).slice(0, DEFAULT_SLUG_LENGTH);
 }
 
 async function generateUniqueSlug(existsFn, options = {}) {
@@ -36,6 +37,7 @@ async function generateUniqueSlug(existsFn, options = {}) {
     const slug = generateDefaultSlug(
       options.objectId || new mongoose.Types.ObjectId(),
     );
+    console.log(`Attempt ${attempt + 1}: Testing slug ${slug}`);
     const slugExists = await existsFn(slug);
 
     if (!slugExists) {

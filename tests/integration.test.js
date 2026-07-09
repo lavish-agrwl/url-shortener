@@ -11,7 +11,7 @@ const { getAnalytics } = require('../src/services/analytics');
 const { createShortUrl } = require('../src/services/shorten');
 const { getRedirectUrl } = require('../src/services/redirect');
 const { getClientIp, enqueueClick } = require('../src/services/queue');
-const { RATE_LIMITS, setRateLimitHeaders } = require('../src/services/rateLimiter');
+const { RATE_LIMITS, setRateLimitHeaders, checkRateLimit } = require('../src/services/rateLimiter');
 
 // Helper to spin up the server in a separate process for each suite
 async function setupServer({ mongoUri, redisUrl }) {
@@ -21,37 +21,26 @@ async function setupServer({ mongoUri, redisUrl }) {
   app.use(require('cors')());
   app.use(require('morgan')('dev'));
 
-  const redisClient = getRedisClient(redisUrl);
-  const { clickQueue, clickDlq } = getClickQueues({ host: "127.0.0.1", port: 6379 });
+    const redisClient = getRedisClient(redisUrl);
+    const { clickQueue, clickDlq } = getClickQueues(redisClient);
 
   // Endpoints from the real API (all logic is kept in the same functions)
   app.post("/api/shorten", async (req, res) => {
-    const clientIp = getClientIp(req);
-    const now = new Date();
-    const rateLimitResult = await checkRateLimit(redisClient, clientIp, "shorten", RATE_LIMITS.shorten.limit, now);
-    setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.shorten.limit);
-    if (!rateLimitResult.allowed) return res.status(429).json({ error: "Rate limit exceeded" });
     try {
-      const shortened = await createShortUrl(req.body, { baseUrl: "http://localhost", now, cacheClient: redisClient });
-      res.status(201).json(shortened);
+      const clientIp = getClientIp(req);
+      const now = new Date();
+      const rateLimitResult = await checkRateLimit(redisClient, clientIp, "shorten", RATE_LIMITS.shorten.limit, now);
+      setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.shorten.limit);
+      if (!rateLimitResult.allowed) return res.status(429).json({ error: "Rate limit exceeded" });
+      try {
+        const shortened = await createShortUrl(req.body, { baseUrl: "http://localhost", now, cacheClient: redisClient });
+        res.status(201).json(shortened);
+      } catch (err) {
+        console.error("Shorten internal error:", err);
+        res.status(500).json({ error: "Failed" });
+      }
     } catch (err) {
-      res.status(500).json({ error: "Failed" });
-    }
-  });
-
-  app.get("/:slug", async (req, res) => {
-    const clientIp = getClientIp(req);
-    const now = new Date();
-    const rateLimitResult = await checkRateLimit(redisClient, clientIp, "redirect", RATE_LIMITS.redirect.limit, now);
-    setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.redirect.limit);
-    if (!rateLimitResult.allowed) return res.status(429).json({ error: "Rate limit exceeded" });
-    try {
-      const { slug } = req.params;
-      const originalUrl = await getRedirectUrl(slug, redisClient);
-      if (!originalUrl) return res.status(404).json({ error: "Slug not found" });
-      enqueueClick(clickQueue, slug, req);
-      res.redirect(301, originalUrl);
-    } catch (err) {
+      console.error("Shorten wrapper error:", err);
       res.status(500).json({ error: "Failed" });
     }
   });
@@ -82,6 +71,24 @@ async function setupServer({ mongoUri, redisUrl }) {
     }
   });
 
+  app.get("/:slug", async (req, res) => {
+    const clientIp = getClientIp(req);
+    const now = new Date();
+    const rateLimitResult = await checkRateLimit(redisClient, clientIp, "redirect", RATE_LIMITS.redirect.limit, now);
+    setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.redirect.limit);
+    if (!rateLimitResult.allowed) return res.status(429).json({ error: "Rate limit exceeded" });
+    try {
+      const { slug } = req.params;
+      const originalUrl = await getRedirectUrl(slug, redisClient);
+      if (!originalUrl) return res.status(404).json({ error: "Slug not found" });
+      enqueueClick(clickQueue, slug, req);
+      res.redirect(301, originalUrl);
+    } catch (err) {
+      console.error("Redirect error:", err);
+      res.status(500).json({ error: "Failed" });
+    }
+  });
+
   const server = app.listen(0); // random available port
   const port = server.address().port;
   return { app, server, request: request(app), url: `http://localhost:${port}` };
@@ -97,7 +104,7 @@ describe('Integration tests', () => {
     // Start in‑memory MongoDB
     mongoServer = await MongoMemoryServer.create();
     mongoUri = mongoServer.getUri();
-    await mongoose.connect(mongoUri, { useNewUrlParser: true, useUnifiedTopology: true });
+    await mongoose.connect(mongoUri);
     serverInfo = await setupServer({ mongoUri, redisUrl });
   });
 

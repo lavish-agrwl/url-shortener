@@ -21,20 +21,7 @@ const {
   RATE_LIMITS,
 } = require("../src/services/rateLimiter");
 
-let env;
-try {
-  env = loadEnv(process.env);
-} catch (err) {
-  // Load failed (missing vars) — fall back to safe defaults for local dev
-  console.warn("env validation failed, falling back to defaults:", err.message);
-  env = {
-    MONGODB_URI:
-      process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/url-shortener",
-    REDIS_URL: process.env.REDIS_URL || "redis://127.0.0.1:6379",
-    BASE_URL: process.env.BASE_URL || "http://localhost:3000",
-    NODE_ENV: process.env.NODE_ENV || "development",
-  };
-}
+const env = loadEnv(process.env);
 
 const app = express();
 const redisClient = getRedisClient(env.REDIS_URL);
@@ -123,6 +110,35 @@ app.get("/health", async (req, res) => {
   }
 });
 
+app.get("/api/analytics/:slug", async (req, res) => {
+  const clientIp = getClientIp(req);
+  const now = new Date();
+  const rateLimitResult = await checkRateLimit(
+    redisClient,
+    clientIp,
+    "analytics",
+    RATE_LIMITS.analytics.limit,
+    now,
+  );
+  setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.analytics.limit);
+
+  if (!rateLimitResult.allowed) {
+    return res.status(429).json({ error: "Rate limit exceeded" });
+  }
+
+  try {
+    const { slug } = req.params;
+    const analytics = await getAnalytics(slug, { redisClient, now });
+    if (!analytics) {
+      return res.status(404).json({ error: "Slug not found or expired" });
+    }
+    res.json(analytics);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to retrieve analytics" });
+  }
+});
+
 app.get("/:slug", async (req, res) => {
   const clientIp = getClientIp(req);
   const now = new Date();
@@ -159,35 +175,7 @@ app.get("/:slug", async (req, res) => {
   }
 });
 
-app.get("/api/analytics/:slug", async (req, res) => {
-  const clientIp = getClientIp(req);
-  const now = new Date();
-  const rateLimitResult = await checkRateLimit(
-    redisClient,
-    clientIp,
-    "analytics",
-    RATE_LIMITS.analytics.limit,
-    now,
-  );
-  setRateLimitHeaders(res, rateLimitResult, RATE_LIMITS.analytics.limit);
-
-  if (!rateLimitResult.allowed) {
-    return res.status(429).json({ error: "Rate limit exceeded" });
-  }
-
-  try {
-    const { slug } = req.params;
-    const analytics = await getAnalytics(slug, { redisClient, now });
-    if (!analytics) {
-      return res.status(404).json({ error: "Slug not found or expired" });
-    }
-    res.json(analytics);
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Failed to retrieve analytics" });
-  }
-});
-
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
   console.log(`API listening on ${port} (env=${env.NODE_ENV})`);
