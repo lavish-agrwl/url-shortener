@@ -17,7 +17,7 @@ async function aggregateTotalClicks(slug) {
 
 async function aggregateClicksPerDay(slug, now = new Date()) {
   const thirtyDaysAgo = getThirtyDaysAgo(now);
-  const results = await Click.aggregate([
+  return Click.aggregate([
     {
       $match: {
         slug,
@@ -44,50 +44,35 @@ async function aggregateClicksPerDay(slug, now = new Date()) {
       },
     },
   ]);
+}
 
-  return results;
+async function aggregateTopField(slug, fieldName) {
+  return Click.aggregate([
+    {
+      $match: {
+        slug,
+        [fieldName]: { $ne: null },
+      },
+    },
+    { $group: { _id: `$${fieldName}`, count: { $sum: 1 } } },
+    { $sort: { count: -1 } },
+    { $limit: 5 },
+    {
+      $project: {
+        _id: 0,
+        [fieldName]: "$_id",
+        count: 1,
+      },
+    },
+  ]);
 }
 
 async function aggregateTopReferrers(slug) {
-  return Click.aggregate([
-    {
-      $match: {
-        slug,
-        referrer: { $ne: null },
-      },
-    },
-    { $group: { _id: "$referrer", count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 5 },
-    {
-      $project: {
-        _id: 0,
-        referrer: "$_id",
-        count: 1,
-      },
-    },
-  ]);
+  return aggregateTopField(slug, "referrer");
 }
 
 async function aggregateTopCountries(slug) {
-  return Click.aggregate([
-    {
-      $match: {
-        slug,
-        country: { $ne: null },
-      },
-    },
-    { $group: { _id: "$country", count: { $sum: 1 } } },
-    { $sort: { count: -1 } },
-    { $limit: 5 },
-    {
-      $project: {
-        _id: 0,
-        country: "$_id",
-        count: 1,
-      },
-    },
-  ]);
+  return aggregateTopField(slug, "country");
 }
 
 module.exports = {

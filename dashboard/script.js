@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
   // --- State & Constants ---
-  // let clicksChart = null;
+  let clicksChart = null;
 
   // --- Elements ---
   const healthBadge = document.getElementById('health-badge');
@@ -29,7 +29,21 @@ document.addEventListener('DOMContentLoaded', () => {
    const countriesTableBody = document.querySelector('#countries-table tbody');
    const clicksCanvas = document.getElementById('clicks-chart');
 
-  // --- Health Polling ---
+   // --- Helpers ---
+   function populateTable(tbody, data, fieldName, emptyMessage) {
+     tbody.innerHTML = '';
+     if (data && data.length > 0) {
+       data.forEach(item => {
+         const row = document.createElement('tr');
+         row.innerHTML = `<td>${item[fieldName]}</td><td>${item.count.toLocaleString()}</td>`;
+         tbody.appendChild(row);
+       });
+     } else {
+       tbody.innerHTML = `<tr><td colspan="2" style="text-align:center">${emptyMessage}</td></tr>`;
+     }
+   }
+
+   // --- Health Polling ---
   async function updateHealth() {
     try {
       const resp = await fetch('/health');
@@ -170,35 +184,18 @@ document.addEventListener('DOMContentLoaded', () => {
          : 'N/A';
 
        // Update Table
-       referrersTableBody.innerHTML = '';
-       if (data.topReferrers && data.topReferrers.length > 0) {
-         data.topReferrers.forEach(item => {
-           const row = document.createElement('tr');
-           row.innerHTML = `<td>${item.referrer}</td><td>${item.count.toLocaleString()}</td>`;
-           referrersTableBody.appendChild(row);
-         });
-       } else {
-         referrersTableBody.innerHTML = '<tr><td colspan="2" style="text-align:center">No referrer data available</td></tr>';
-       }
+       populateTable(referrersTableBody, data.topReferrers, 'referrer', 'No referrer data available');
 
        // Update Countries Table
-       countriesTableBody.innerHTML = '';
-       if (data.topCountries && data.topCountries.length > 0) {
-         data.topCountries.forEach(item => {
-           const row = document.createElement('tr');
-           row.innerHTML = `<td>${item.country}</td><td>${item.count.toLocaleString()}</td>`;
-           countriesTableBody.appendChild(row);
-         });
-       } else {
-         countriesTableBody.innerHTML = '<tr><td colspan="2" style="text-align:center">No country data available</td></tr>';
-       }
+       populateTable(countriesTableBody, data.topCountries, 'country', 'No country data available');
 
        // Update Chart
+       analyticsLoading.classList.add('hidden');
+       analyticsContent.classList.remove('hidden');
 
-       // renderChart(data.clicksPerDay);
-
-      analyticsLoading.classList.add('hidden');
-      analyticsContent.classList.remove('hidden');
+       requestAnimationFrame(() => {
+         renderChart(data.clicksPerDay);
+       });
     } catch (err) {
       analyticsLoading.classList.add('hidden');
       analyticsError.textContent = err.message;
