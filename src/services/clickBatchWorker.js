@@ -112,7 +112,7 @@ function createClickBatchWorker(queueName, redisConnection, options = {}) {
         attemptsMade: job.attemptsMade,
         data: job.data,
       }, {
-        jobId: `failed:${job.id}`,
+        jobId: `failed-${job.id}`,
       });
     } catch (dlqErr) {
       console.error("Failed to route click job to DLQ:", dlqErr);
