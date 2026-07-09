@@ -36,7 +36,6 @@ async function generateUniqueSlug(existsFn, options = {}) {
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const objectId = (attempt === 0 && options.objectId) || new mongoose.Types.ObjectId();
     const slug = generateDefaultSlug(objectId);
-    console.log(`Attempt ${attempt + 1}: Testing slug ${slug}`);
     const slugExists = await existsFn(slug);
 
     if (!slugExists) {

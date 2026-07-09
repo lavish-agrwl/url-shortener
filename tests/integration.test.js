@@ -101,9 +101,12 @@ describe('Integration tests', () => {
   let serverInfo;
 
   beforeAll(async () => {
-    // Start in‑memory MongoDB
-    mongoServer = await MongoMemoryServer.create();
-    mongoUri = mongoServer.getUri();
+    if (process.env.MONGODB_URI) {
+      mongoUri = process.env.MONGODB_URI;
+    } else {
+      mongoServer = await MongoMemoryServer.create();
+      mongoUri = mongoServer.getUri();
+    }
     await mongoose.connect(mongoUri);
 
     // Ensure Redis is connected
@@ -115,7 +118,7 @@ describe('Integration tests', () => {
     }
 
     serverInfo = await setupServer({ mongoUri, redisUrl });
-  });
+  }, 30000);
 
   beforeEach(async () => {
     // Clear Redis state between tests
@@ -124,8 +127,12 @@ describe('Integration tests', () => {
 
   afterAll(async () => {
     await mongoose.disconnect();
-    await mongoServer.stop();
-    serverInfo.server.close();
+    if (mongoServer) {
+      await mongoServer.stop();
+    }
+    if (serverInfo?.server) {
+      serverInfo.server.close();
+    }
     // Do not disconnect shared Redis client unless necessary, but for tests we can
     await redisClient.quit();
   });
