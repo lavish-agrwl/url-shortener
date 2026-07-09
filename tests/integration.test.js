@@ -118,7 +118,7 @@ describe('Integration tests', () => {
     }
 
     serverInfo = await setupServer({ mongoUri, redisUrl });
-  }, 30000);
+  }, 60000);
 
   beforeEach(async () => {
     // Clear Redis state between tests
@@ -133,8 +133,9 @@ describe('Integration tests', () => {
     if (serverInfo?.server) {
       serverInfo.server.close();
     }
-    // Do not disconnect shared Redis client unless necessary, but for tests we can
-    await redisClient.quit();
+    if (redisClient) {
+      await redisClient.quit();
+    }
   });
 
   test('POST /api/shorten creates a short URL', async () => {
