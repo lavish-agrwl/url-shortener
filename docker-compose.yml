@@ -13,6 +13,18 @@ services:
       - mongo
       - redis
 
+  worker:
+    build: .
+    image: url-shortener-worker:local
+    command: ["node", "./api/worker.js"]
+    environment:
+      - MONGODB_URI=mongodb://mongo:27017/url-shortener
+      - REDIS_URL=redis://redis:6379
+      - BASE_URL=http://localhost:3000
+    depends_on:
+      - mongo
+      - redis
+
   redis:
     image: redis:7
     ports:

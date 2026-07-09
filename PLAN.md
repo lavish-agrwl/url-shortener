@@ -44,9 +44,11 @@
 
 ## Phase 7: Frontend Dashboard
 
-- [x] Build the shorten form and result display for the dashboard.
-- [x] Build the analytics summary cards for total clicks, top referrer, and date created.
-- [x] Build the Chart.js clicks-per-day line chart for a slug.
+- [x] Rebuild the dashboard using plain HTML/CSS/vanilla JS (no frameworks).
+- [x] Implement URL shortening form with copy-to-clipboard.
+- [x] Implement analytics view with Chart.js and referrer breakdown.
+- [x] Implement health status polling badge.
+- [x] Handle loading and error states visually.
 
 ## Phase 8: Testing and Delivery
 

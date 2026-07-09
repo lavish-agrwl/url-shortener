@@ -38,10 +38,19 @@ async function bulkIncrementUrlClicks(clickCounts) {
   );
 }
 
+async function findAllUrls(limit = 100, skip = 0) {
+  return Url.find({})
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit)
+    .lean();
+}
+
 module.exports = {
   createUrl,
   findUrlBySlug,
   findActiveUrlBySlug,
   incrementUrlClicks,
   bulkIncrementUrlClicks,
+  findAllUrls,
 };

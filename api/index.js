@@ -3,6 +3,7 @@ const helmet = require("helmet");
 const cors = require("cors");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
+const path = require("path");
 
 const { loadEnv } = require("../src/config/env");
 const { getHealthStatus } = require("../src/services/health");
@@ -11,6 +12,7 @@ const { createQueueBoard } = require("../src/services/bullBoard");
 const { createShortUrl } = require("../src/services/shorten");
 const { getRedirectUrl } = require("../src/services/redirect");
 const { getAnalytics } = require("../src/services/analytics");
+const { listUrls } = require("../src/services/urlList");
 
 const {
   getClickQueues,
@@ -45,6 +47,12 @@ if (env.NODE_ENV === "production") {
 }
 
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
+
+app.use("/dashboard", express.static(path.join(__dirname, "../dashboard")));
+
+app.get("/dashboard", (req, res) => {
+  res.sendFile(path.join(__dirname, "../dashboard/index.html"));
+});
 
 app.get("/", (req, res) => res.json({ status: "ok" }));
 
@@ -141,6 +149,17 @@ app.get("/api/analytics/:slug", async (req, res) => {
   }
 });
 
+app.get("/api/urls", async (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit, 10) || 100;
+    const skip = parseInt(req.query.skip, 10) || 0;
+    const urls = await listUrls({ limit, skip });
+    res.json(urls);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to retrieve URLs" });
+  }
+});
+
 app.get("/:slug", async (req, res) => {
   const clientIp = getClientIp(req);
   const now = new Date();
@@ -179,7 +198,8 @@ app.get("/:slug", async (req, res) => {
 
 const port = process.env.PORT || 3000;
 
-mongoose.connect(env.MONGODB_URI)
+mongoose
+  .connect(env.MONGODB_URI)
   .then(() => {
     app.listen(port, () => {
       console.log(`API listening on ${port} (env=${env.NODE_ENV})`);

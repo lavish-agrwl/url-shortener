@@ -1,196 +1,121 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>URL Shortener Dashboard</title>
-  <!-- React and ReactDOM via CDN -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-  <!-- Babel for JSX transformation -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <style>
-    body {font-family: Arial, sans-serif; margin: 2rem;}
-    .form-group {margin-bottom: 1rem;}
-    label {display: block; margin-bottom: 0.5rem;}
-    input, button {padding: 0.5rem; width: 100%;}
-    button {cursor: pointer;}
-    .result {margin-top: 1rem;}
-  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <header>
+    <div class="container header-content">
+      <h1>URL Shortener Dashboard</h1>
+      <div id="health-badge" class="badge badge-unknown">
+        Checking Health...
+      </div>
+    </div>
+  </header>
 
-  <script type="text/babel">
-    const { useState, useEffect, useRef } = React;
-
-    // Shorten form component (only)
-    function ShortenForm() {
-      const [url, setUrl] = useState('');
-      const [customSlug, setCustomSlug] = useState('');
-      const [expiresAt, setExpiresAt] = useState('');
-      const [result, setResult] = useState(null);
-      const [error, setError] = useState(null);
-
-      const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError(null);
-        setResult(null);
-        const payload = { url };
-        if (customSlug) payload.customSlug = customSlug;
-        if (expiresAt) payload.expiresAt = expiresAt;
-        try {
-          const resp = await fetch('/api/shorten', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload),
-          });
-          const data = await resp.json();
-          if (!resp.ok) {
-            setError(data.error || 'Failed to shorten');
-          } else {
-            setResult(data);
-          }
-        } catch (e) {
-          setError('Network error');
-        }
-      };
-
-      return (
-        <div>
-          <h2>Shorten a URL</h2>
-          <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>Long URL</label>
-              <input type="url" required value={url} onChange={e => setUrl(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Custom slug (optional)</label>
-              <input type="text" value={customSlug} onChange={e => setCustomSlug(e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label>Expiry (ISO date, optional)</label>
-              <input type="date" value={expiresAt} onChange={e => setExpiresAt(e.target.value)} />
-            </div>
-            <button type="submit">Shorten</button>
-          </form>
-          {error && <p style={{color: 'red'}}>{error}</p>}
-          {result && (
-            <div className="result">
-              <p>Short URL: <a href={result.shortUrl} target="_blank" rel="noopener noreferrer">{result.shortUrl}</a></p>
-              <p>Created at: {new Date(result.createdAt).toLocaleString()}</p>
-              {result.expiresAt && <p>Expires at: {new Date(result.expiresAt).toLocaleString()}</p>}
-            </div>
-          )}
+  <main class="container">
+    <section id="shorten-section" class="card">
+      <h2>Shorten a URL</h2>
+      <form id="shorten-form">
+        <div class="form-group">
+          <label for="long-url">Long URL</label>
+          <input type="url" id="long-url" required placeholder="https://example.com/very-long-url">
         </div>
-      );
-    }
+        <div class="form-group">
+          <label for="custom-slug">Custom slug (optional)</label>
+          <input type="text" id="custom-slug" placeholder="my-slug">
+        </div>
+        <div class="form-group">
+          <label for="expiry-date">Expiry date (optional)</label>
+          <input type="date" id="expiry-date">
+        </div>
+        <button type="submit" id="shorten-btn">Shorten URL</button>
+      </form>
+      <div id="shorten-result" class="result-area hidden">
+        <div class="result-content">
+          <p><strong>Short URL:</strong> <span id="short-url-text"></span></p>
+          <button id="copy-btn">Copy to Clipboard</button>
+        </div>
+        <div id="shorten-meta" class="meta-text"></div>
+      </div>
+      <div id="shorten-error" class="error-message hidden"></div>
+    </section>
 
-    // Analytics view component with chart
-    function AnalyticsSummary() {
-      const [slug, setSlug] = useState('');
-      const [data, setData] = useState(null);
-      const [error, setError] = useState(null);
-      const chartRef = useRef(null);
-      const chartInstance = useRef(null);
+    <section id="manage-section" class="card">
+      <h2>Manage URLs</h2>
+      <div id="urls-loading" class="loading-message">Loading URLs...</div>
+      <div id="urls-error" class="error-message hidden"></div>
+      <div id="urls-content" class="hidden">
+        <div class="referrers-container">
+          <table id="urls-table">
+            <thead>
+              <tr>
+                <th>Slug</th>
+                <th>Original URL</th>
+                <th>Created At</th>
+                <th>Clicks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows added by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
-      const loadData = async () => {
-        setError(null);
-        setData(null);
-        try {
-          const resp = await fetch(`/api/analytics/${slug}`);
-          const json = await resp.json();
-          if (!resp.ok) {
-            setError(json.error || 'Failed to load analytics');
-          } else {
-            setData(json);
-          }
-        } catch (e) {
-          setError('Network error');
-        }
-      };
+    <section id="analytics-section" class="card">
+      <h2>Analytics</h2>
+      <div class="analytics-search">
+        <div class="form-group inline">
+          <label for="analytics-slug">Slug</label>
+          <input type="text" id="analytics-slug" placeholder="enter slug">
+          <button id="load-analytics-btn">Load Analytics</button>
+        </div>
+      </div>
 
-      // Render chart when data changes
-      useEffect(() => {
-        if (!data) return;
-        const ctx = chartRef.current?.getContext('2d');
-        if (!ctx) return;
-        const labels = data.clicksPerDay.map(d => d.date);
-        const values = data.clicksPerDay.map(d => d.count);
-        if (chartInstance.current) {
-          chartInstance.current.destroy();
-        }
-        chartInstance.current = new Chart(ctx, {
-          type: 'line',
-          data: {
-            labels,
-            datasets: [{
-              label: 'Clicks per day',
-              data: values,
-              borderColor: 'rgba(75,192,192,1)',
-              backgroundColor: 'rgba(75,192,192,0.2)',
-              fill: true,
-            }],
-          },
-          options: {
-            responsive: true,
-            scales: {
-              x: { title: { display: true, text: 'Date' } },
-              y: { title: { display: true, text: 'Clicks' }, beginAtZero: true },
-            },
-          },
-        });
-      }, [data]);
+      <div id="analytics-loading" class="loading-message hidden">Loading analytics...</div>
+      <div id="analytics-error" class="error-message hidden"></div>
 
-      const topRef = data && data.topReferrers && data.topReferrers[0] ? data.topReferrers[0].referrer : 'N/A';
-
-      return (
-        <div>
-          <h2>Analytics</h2>
-          <div className="form-group">
-            <label>Slug</label>
-            <input type="text" value={slug} onChange={e => setSlug(e.target.value)} />
-            <button onClick={loadData}>Load</button>
+      <div id="analytics-content" class="hidden">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <span class="stat-label">Total Clicks</span>
+            <span id="stat-total-clicks" class="stat-value">0</span>
           </div>
-          {error && <p style={{color: 'red'}}>{error}</p>}
-          {data && (
-            <div>
-              <div className="cards">
-                <div className="card">
-                  <h3>Total Clicks</h3>
-                  <p>{data.totalClicks}</p>
-                </div>
-                <div className="card">
-                  <h3>Top Referrer</h3>
-                  <p>{topRef}</p>
-                </div>
-                <div className="card">
-                  <h3>Date Created</h3>
-                  {/* createdAt not provided by analytics endpoint; showing N/A */}
-                  <p>N/A</p>
-                </div>
-              </div>
-              <h3>Clicks per Day</h3>
-              <canvas ref={chartRef}></canvas>
-            </div>
-          )}
+          <div class="stat-card">
+            <span class="stat-label">Top Referrer</span>
+            <span id="stat-top-referrer" class="stat-value">N/A</span>
+          </div>
         </div>
-      );
-    }
 
-    function App() {
-      return (
-        <div>
-          <h1>URL Shortener Dashboard</h1>
-          <ShortenForm />
-          {/* Analytics summary added */}
-          <AnalyticsSummary />
+        <div class="chart-container">
+          <h3>Clicks per Day</h3>
+          <canvas id="clicks-chart"></canvas>
         </div>
-      );
-    }
 
-    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
-  </script>
+        <div class="referrers-container">
+          <h3>Top Referrers</h3>
+          <table id="referrers-table">
+            <thead>
+              <tr>
+                <th>Referrer</th>
+                <th>Clicks</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!-- Rows added by JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
 </body>
 </html>
