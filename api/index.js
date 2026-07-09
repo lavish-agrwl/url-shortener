@@ -5,6 +5,7 @@ const morgan = require("morgan");
 
 const { loadEnv } = require("../src/config/env");
 const { getHealthStatus } = require("../src/services/health");
+const { getRedisClient } = require("../src/services/redisClient");
 const { createQueueBoard } = require("../src/services/bullBoard");
 const { createShortUrl } = require("../src/services/shorten");
 const { getRedirectUrl } = require("../src/services/redirect");
