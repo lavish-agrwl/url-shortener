@@ -1,5 +1,6 @@
 const { Queue } = require("bullmq");
 const crypto = require("crypto");
+const geoip = require("geoip-lite");
 const { buildClickEventPayload } = require("../validation/clickEvent");
 
 const CLICK_EVENTS_QUEUE = "click-events";
@@ -79,7 +80,23 @@ async function enqueueClick(queue, slug, req, timestamp = new Date()) {
   const ipHash = hashIp(clientIp);
   const userAgent = req.headers["user-agent"] || "";
   const referrer = req.headers["referer"] || null;
-  const country = req.headers["x-vercel-ip-country"] || null;
+
+  // 1. Try configurable header (e.g., GEOIP_HEADER_NAME)
+  const geoHeader = process.env.GEOIP_HEADER_NAME;
+  let country = geoHeader ? req.headers[geoHeader] : null;
+
+  // 2. Fallback to geoip-lite lookup
+  if (!country) {
+    try {
+      const geo = geoip.lookup(clientIp);
+      country = geo ? geo.country : null;
+    } catch (err) {
+      console.error("GeoIP lookup failed:", err);
+    }
+  }
+
+  // 3. Use "unknown" sentinel for missing/failed lookups
+  country = country || "unknown";
 
   try {
     // Fire-and-forget: don't await, add to queue without blocking
