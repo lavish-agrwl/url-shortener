@@ -1,6 +1,6 @@
-const { loadEnv } = require("../src/config/env");
-const { CLICK_EVENTS_QUEUE } = require("../src/services/queue");
-const { createClickBatchWorker } = require("../src/services/clickBatchWorker");
+const { loadEnv } = require("../config/env");
+const { CLICK_EVENTS_QUEUE } = require("../services/queue");
+const { createClickBatchWorker } = require("../services/clickBatchWorker");
 const mongoose = require("mongoose");
 
 const env = loadEnv(process.env);

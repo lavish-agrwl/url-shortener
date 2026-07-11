@@ -16,7 +16,7 @@ services:
   worker:
     build: .
     image: url-shortener-worker:local
-    command: ["node", "./api/worker.js"]
+    command: ["node", "./src/api/worker.js"]
     environment:
       - MONGODB_URI=mongodb://mongo:27017/url-shortener
       - REDIS_URL=redis://redis:6379

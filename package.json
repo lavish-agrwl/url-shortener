@@ -3,12 +3,12 @@
   "version": "0.1.0",
   "private": true,
   "description": "Distributed URL shortener with analytics pipeline",
-  "main": "api/index.js",
+  "main": "src/api/index.js",
   "engines": {
     "node": ">=20.19.0"
   },
   "scripts": {
-    "start": "node api/index.js",
+    "start": "node src/api/index.js",
     "test": "jest",
     "lint": "eslint .",
     "seed": "node scripts/seed.js"

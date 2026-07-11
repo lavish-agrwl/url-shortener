@@ -5,26 +5,26 @@ const morgan = require("morgan");
 const mongoose = require("mongoose");
 const path = require("path");
 
-const { loadEnv } = require("../src/config/env");
-const { getHealthStatus } = require("../src/services/health");
-const { getRedisClient } = require("../src/services/redisClient");
-const { createQueueBoard } = require("../src/services/bullBoard");
-const { createShortUrl } = require("../src/services/shorten");
-const { getRedirectUrl } = require("../src/services/redirect");
-const { getAnalytics } = require("../src/services/analytics");
-const { listUrls } = require("../src/services/urlList");
+const { loadEnv } = require("../config/env");
+const { getHealthStatus } = require("../services/health");
+const { getRedisClient } = require("../services/redisClient");
+const { createQueueBoard } = require("../services/bullBoard");
+const { createShortUrl } = require("../services/shorten");
+const { getRedirectUrl } = require("../services/redirect");
+const { getAnalytics } = require("../services/analytics");
+const { listUrls } = require("../services/urlList");
 
 const {
   getClickQueues,
   enqueueClick,
   getClientIp,
-} = require("../src/services/queue");
-const logger = require("../src/lib/logger");
+} = require("../services/queue");
+const logger = require("../lib/logger");
 const {
   checkRateLimit,
   setRateLimitHeaders,
   RATE_LIMITS,
-} = require("../src/services/rateLimiter");
+} = require("../services/rateLimiter");
 
 const env = loadEnv(process.env);
 

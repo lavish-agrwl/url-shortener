@@ -9,4 +9,4 @@ RUN if [ -f package-lock.json ]; then npm ci --omit=dev; else npm i --omit=dev; 
 COPY . .
 
 EXPOSE 3000
-CMD ["node", "./api/index.js"]
+CMD ["node", "./src/api/index.js"]
