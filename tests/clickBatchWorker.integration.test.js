@@ -50,10 +50,6 @@ describe("clickBatchWorker Integration Tests", () => {
     }
     await mongoose.connect(mongoUri);
 
-    // Fix #1: Queue and Worker each get their own ioredis connection.
-    // Sharing one connection between a Queue (regular commands) and a
-    // Worker (blocking commands) is unsupported by BullMQ and can cause
-    // stalls under load.
     queueRedisClient = new IORedis(redisUrl, { maxRetriesPerRequest: null });
     workerRedisClient = new IORedis(redisUrl, { maxRetriesPerRequest: null });
 
@@ -63,43 +59,26 @@ describe("clickBatchWorker Integration Tests", () => {
     } catch (err) {
       throw new Error(`Redis connection failed: ${err.message}`);
     }
+  }, 60000);
+
+  beforeEach(async () => {
+    await Click.deleteMany({});
+    await queueRedisClient.flushdb();
 
     testQueue = new Queue(QUEUE_NAME, { connection: queueRedisClient });
     worker = createClickBatchWorker(QUEUE_NAME, workerRedisClient, {
       batchSize: TEST_BATCH_SIZE,
       flushIntervalMs: TEST_FLUSH_INTERVAL_MS,
     });
-  }, 60000);
+  });
 
-  beforeEach(async () => {
-    // Fix #2: don't discard in-flight work — let it finish (or fail) so
-    // every job's promise actually settles before we reset state.
-    // Otherwise a job left in `pendingJobs`/`currentBatch` from the
-    // previous test never resolves, leaving a BullMQ job stuck "active"
-    // forever and leaking a concurrency slot into the next test.
-    await waitUntil(() => !worker.state.flushInProgress, {
-      maxWaitMs: 5000,
-      label: "previous flush to finish before test setup",
-    });
-    await worker.flushBatch(); // flush anything still pending from before
-    await waitUntil(() => !worker.state.flushInProgress, {
-      maxWaitMs: 5000,
-      label: "pre-test flush to finish",
-    });
-
-    // Now it's safe to clear state — nothing should be left in it.
-    worker.state.pendingJobs = [];
-    worker.state.currentBatch = null;
-    worker.state.flushInProgress = false;
-    worker.state.flushRequestedWhileInProgress = false;
-    worker.state.lastFlushAt = Date.now();
-
-    // Fully reset the queue, including any active/failed/completed jobs —
-    // drain() alone only clears waiting/delayed jobs.
-    await testQueue.obliterate({ force: true });
-
-    // Clear MongoDB clicks
-    await Click.deleteMany({});
+  afterEach(async () => {
+    if (worker) {
+      await worker.close();
+    }
+    if (testQueue) {
+      await testQueue.close();
+    }
   });
 
   afterAll(async () => {
