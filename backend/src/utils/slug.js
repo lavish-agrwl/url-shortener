@@ -1,21 +1,18 @@
 const mongoose = require("mongoose");
+const constants = require("../config/constants");
 
-const BASE62_ALPHABET =
-  "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const DEFAULT_SLUG_LENGTH = 7;
-const MAX_SLUG_ATTEMPTS = 5;
 
 function encodeBase62(value) {
   let remaining = BigInt(value);
 
   if (remaining === 0n) {
-    return BASE62_ALPHABET[0];
+    return constants.SLUG.BASE62_ALPHABET[0];
   }
 
   let encoded = "";
   while (remaining > 0n) {
     const index = Number(remaining % 62n);
-    encoded = BASE62_ALPHABET[index] + encoded;
+    encoded = constants.SLUG.BASE62_ALPHABET[index] + encoded;
     remaining /= 62n;
   }
 
@@ -27,11 +24,11 @@ function generateDefaultSlug(objectId = new mongoose.Types.ObjectId()) {
   const objectIdAsBigInt = BigInt(`0x${objectIdHex}`);
 
   const encoded = encodeBase62(objectIdAsBigInt);
-  return encoded.padStart(DEFAULT_SLUG_LENGTH, BASE62_ALPHABET[0]).slice(-DEFAULT_SLUG_LENGTH);
+  return encoded.padStart(constants.SLUG.DEFAULT_LENGTH, constants.SLUG.BASE62_ALPHABET[0]).slice(-constants.SLUG.DEFAULT_LENGTH);
 }
 
 async function generateUniqueSlug(existsFn, options = {}) {
-  const maxAttempts = options.maxAttempts || MAX_SLUG_ATTEMPTS;
+  const maxAttempts = options.maxAttempts || constants.SLUG.MAX_ATTEMPTS;
 
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const objectId = (attempt === 0 && options.objectId) || new mongoose.Types.ObjectId();
@@ -47,9 +44,9 @@ async function generateUniqueSlug(existsFn, options = {}) {
 }
 
 module.exports = {
-  BASE62_ALPHABET,
-  DEFAULT_SLUG_LENGTH,
-  MAX_SLUG_ATTEMPTS,
+  BASE62_ALPHABET: constants.SLUG.BASE62_ALPHABET,
+  DEFAULT_SLUG_LENGTH: constants.SLUG.DEFAULT_LENGTH,
+  MAX_SLUG_ATTEMPTS: constants.SLUG.MAX_ATTEMPTS,
   encodeBase62,
   generateDefaultSlug,
   generateUniqueSlug,

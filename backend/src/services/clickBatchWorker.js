@@ -2,10 +2,8 @@ const { Queue, Worker } = require("bullmq");
 const { CLICK_EVENTS_DLQ } = require("./queue");
 const { bulkIncrementUrlClicks, createClicksBatch } = require("../data");
 const logger = require("../lib/logger");
+const constants = require("../config/constants");
 
-const DEFAULT_BATCH_SIZE = 50;
-const DEFAULT_FLUSH_INTERVAL_MS = 5000;
-const DEFAULT_SHUTDOWN_TIMEOUT_MS = 10000;
 
 function createBatchState() {
   return {
@@ -72,8 +70,8 @@ function scheduleFlush(state, flushIntervalMs) {
 }
 
 function createClickBatchWorker(queueName, redisConnection, options = {}) {
-  const batchSize = options.batchSize || DEFAULT_BATCH_SIZE;
-  const flushIntervalMs = options.flushIntervalMs || DEFAULT_FLUSH_INTERVAL_MS;
+  const batchSize = options.batchSize || constants.QUEUE.BATCH_WORKER.DEFAULT_BATCH_SIZE;
+  const flushIntervalMs = options.flushIntervalMs || constants.QUEUE.BATCH_WORKER.DEFAULT_FLUSH_INTERVAL_MS;
   const ownsDlq = !options.dlq;
   const dlq = options.dlq || new Queue(CLICK_EVENTS_DLQ, {
     connection: redisConnection,
@@ -127,7 +125,7 @@ function createClickBatchWorker(queueName, redisConnection, options = {}) {
     worker,
     state,
     flushBatch: () => flushBatch(state),
-    close: async (timeoutMs = DEFAULT_SHUTDOWN_TIMEOUT_MS) => {
+    close: async (timeoutMs = constants.QUEUE.BATCH_WORKER.DEFAULT_SHUTDOWN_TIMEOUT_MS) => {
       logger.debug({ event: "worker_shutdown_start" }, "Worker shutdown started");
 
       let timeoutHandle;
@@ -169,6 +167,6 @@ function createClickBatchWorker(queueName, redisConnection, options = {}) {
 
 module.exports = {
   createClickBatchWorker,
-  DEFAULT_BATCH_SIZE,
-  DEFAULT_FLUSH_INTERVAL_MS,
+  DEFAULT_BATCH_SIZE: constants.QUEUE.BATCH_WORKER.DEFAULT_BATCH_SIZE,
+  DEFAULT_FLUSH_INTERVAL_MS: constants.QUEUE.BATCH_WORKER.DEFAULT_FLUSH_INTERVAL_MS,
 };

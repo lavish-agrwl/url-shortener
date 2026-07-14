@@ -1,10 +1,10 @@
 const Click = require("../models/click");
 const logger = require("../lib/logger");
+const constants = require("../config/constants");
 
-const THIRTY_DAYS_IN_MS = 30 * 24 * 60 * 60 * 1000;
 
 function getThirtyDaysAgo(now = new Date()) {
-  return new Date(now.getTime() - THIRTY_DAYS_IN_MS);
+  return new Date(now.getTime() - constants.TIME.THIRTY_DAYS_IN_MS);
 }
 
 async function aggregateTotalClicks(slug) {

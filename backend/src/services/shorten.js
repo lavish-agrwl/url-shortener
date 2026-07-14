@@ -2,8 +2,8 @@ const { createUrl, findUrlBySlug } = require("../data");
 const { generateDefaultSlug, generateUniqueSlug } = require("../utils/slug");
 const { parseShortenRequest } = require("../validation/shortenRequest");
 const logger = require("../lib/logger");
+const constants = require("../config/constants");
 
-const REDIRECT_CACHE_TTL_SECONDS = 24 * 60 * 60;
 
 function toIsoString(date) {
   return date ? new Date(date).toISOString() : null;
@@ -23,7 +23,7 @@ async function cacheShortUrl(cacheClient, slug, originalUrl, expiresAt) {
       `url:${slug}`,
       JSON.stringify(metadata),
       "EX",
-      REDIRECT_CACHE_TTL_SECONDS,
+      constants.CACHE.REDIRECT_TTL_SECONDS,
     );
   } catch (_err) {
     logger.warn({ slug }, "Cache write failed for shortened URL");
@@ -82,5 +82,5 @@ module.exports = {
   createShortUrl,
   generateDefaultSlug,
   cacheShortUrl,
-  REDIRECT_CACHE_TTL_SECONDS,
+  REDIRECT_CACHE_TTL_SECONDS: constants.CACHE.REDIRECT_TTL_SECONDS,
 };

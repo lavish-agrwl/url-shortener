@@ -6,6 +6,7 @@ const mongoose = require("mongoose");
 const path = require("path");
 
 const { loadEnv } = require("../config/env");
+const constants = require("../config/constants");
 const { getHealthStatus } = require("../services/health");
 const { getRedisClient } = require("../services/redisClient");
 const { createQueueBoard } = require("../services/bullBoard");
@@ -33,9 +34,9 @@ const redisClient = getRedisClient(env.REDIS_URL);
 // Extract Redis connection from URL for BullMQ
 const redisUrl = new URL(env.REDIS_URL);
 const redisConnection = {
-  host: redisUrl.hostname || "127.0.0.1",
-  port: parseInt(redisUrl.port || "6379", 10),
-  maxRetriesPerRequest: null,
+  host: redisUrl.hostname || constants.REDIS.DEFAULT_HOST,
+  port: parseInt(redisUrl.port || constants.REDIS.DEFAULT_PORT, 10),
+  ...constants.REDIS.CONNECTION_OPTIONS,
 };
 const { clickQueue, clickDlq } = getClickQueues(redisConnection);
 
@@ -199,7 +200,7 @@ app.get("/:slug", async (req, res) => {
   }
 });
 
-const port = process.env.PORT || 3000;
+const port = constants.APP.PORT;
 
 mongoose
   .connect(env.MONGODB_URI)

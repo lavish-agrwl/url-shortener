@@ -3,10 +3,10 @@
  * Prevents burst attacks better than fixed-window algorithms.
  */
 
-const WINDOW_SIZE_MS = 60 * 1000; // 1 minute
-const REDIS_EXPIRY = 120; // 2 minutes (safety margin)
 const logger = require("../lib/logger");
 const crypto = require("crypto");
+const constants = require("../config/constants");
+
 
 /**
  * Check rate limit for a client/endpoint combination.
@@ -29,7 +29,7 @@ async function checkRateLimit(
 ) {
   const nowMs = now.getTime();
   const key = `rl:${ip}:${endpoint}`;
-  const windowStart = nowMs - WINDOW_SIZE_MS;
+  const windowStart = nowMs - constants.RATE_LIMIT.WINDOW_SIZE_MS;
 
   try {
     // Use pipeline for atomic operations
@@ -45,7 +45,7 @@ async function checkRateLimit(
     pipeline.zcard(key);
 
     // Set expiry
-    pipeline.expire(key, REDIS_EXPIRY);
+    pipeline.expire(key, constants.RATE_LIMIT.REDIS_EXPIRY);
 
     const results = await pipeline.exec();
 
@@ -54,7 +54,7 @@ async function checkRateLimit(
 
     const allowed = requestCount <= limit;
     const remaining = Math.max(0, limit - requestCount);
-    const resetAt = nowMs + WINDOW_SIZE_MS;
+    const resetAt = nowMs + constants.RATE_LIMIT.WINDOW_SIZE_MS;
 
     return {
       allowed,
@@ -68,7 +68,7 @@ async function checkRateLimit(
     return {
       allowed: true,
       remaining: limit,
-      resetAt: now.getTime() + WINDOW_SIZE_MS,
+      resetAt: now.getTime() + constants.RATE_LIMIT.WINDOW_SIZE_MS,
     };
   }
 }
@@ -76,20 +76,7 @@ async function checkRateLimit(
 /**
  * Rate limit configuration for endpoints.
  */
-const RATE_LIMITS = {
-  redirect: {
-    limit: 60,
-    windowMs: 60 * 1000,
-  },
-  shorten: {
-    limit: 10,
-    windowMs: 60 * 1000,
-  },
-  analytics: {
-    limit: 30,
-    windowMs: 60 * 1000,
-  },
-};
+const RATE_LIMITS = constants.RATE_LIMIT.LIMITS;
 
 /**
  * Apply rate limit headers to a response.

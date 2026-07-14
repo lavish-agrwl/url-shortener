@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
+const constants = require("../config/constants");
 
-const NINETY_DAYS_IN_SECONDS = 90 * 24 * 60 * 60;
 
 const clickSchema = new mongoose.Schema(
   {
@@ -46,7 +46,7 @@ clickSchema.index(
 );
 clickSchema.index(
   { timestamp: 1 },
-  { expireAfterSeconds: NINETY_DAYS_IN_SECONDS, name: "clicks_timestamp_ttl" },
+  { expireAfterSeconds: constants.TIME.NINETY_DAYS_IN_SECONDS, name: "clicks_timestamp_ttl" },
 );
 
 module.exports = mongoose.models.Click || mongoose.model("Click", clickSchema);

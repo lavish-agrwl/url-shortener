@@ -3,9 +3,8 @@ const crypto = require("crypto");
 const geoip = require("geoip-lite");
 const logger = require("../lib/logger");
 const { buildClickEventPayload } = require("../validation/clickEvent");
+const constants = require("../config/constants");
 
-const CLICK_EVENTS_QUEUE = "click-events";
-const CLICK_EVENTS_DLQ = "click-events-dlq";
 const queues = new Map();
 
 /**
@@ -18,19 +17,15 @@ function getQueue(queueName, redisConnection) {
   if (!queues.has(queueName)) {
     const queue = new Queue(queueName, {
       connection: redisConnection,
-      defaultJobOptions: {
-        attempts: 3,
-        backoff: {
-          type: "exponential",
-          delay: 1000,
-        },
-        removeOnComplete: 100,
-        removeOnFail: 500,
-      },
+      defaultJobOptions: constants.QUEUE.DEFAULT_JOB_OPTIONS,
     });
 
     queue.on("error", (err) => {
-      logger.error({ queueName }, err, "Queue error");
+      if (err && typeof err === "object" && err.command && err.command.name === "info") {
+        logger.debug({ queueName, err }, "Ignored internal BullMQ info command error");
+      } else {
+        logger.error({ queueName }, err, "Queue error");
+      }
     });
 
     queues.set(queueName, queue);
@@ -41,8 +36,8 @@ function getQueue(queueName, redisConnection) {
 
 function getClickQueues(redisConnection) {
   return {
-    clickQueue: getQueue(CLICK_EVENTS_QUEUE, redisConnection),
-    clickDlq: getQueue(CLICK_EVENTS_DLQ, redisConnection),
+    clickQueue: getQueue(constants.QUEUE.CLICK_EVENTS_QUEUE, redisConnection),
+    clickDlq: getQueue(constants.QUEUE.CLICK_EVENTS_DLQ, redisConnection),
   };
 }
 
@@ -122,8 +117,8 @@ async function enqueueClick(queue, slug, req, timestamp = new Date()) {
 }
 
 module.exports = {
-  CLICK_EVENTS_QUEUE,
-  CLICK_EVENTS_DLQ,
+  CLICK_EVENTS_QUEUE: constants.QUEUE.CLICK_EVENTS_QUEUE,
+  CLICK_EVENTS_DLQ: constants.QUEUE.CLICK_EVENTS_DLQ,
   getQueue,
   getClickQueues,
   hashIp,

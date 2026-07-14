@@ -1,7 +1,7 @@
 const { findActiveUrlBySlug } = require("../data/urlRepository");
 const logger = require("../lib/logger");
+const constants = require("../config/constants");
 
-const REDIRECT_CACHE_TTL_SECONDS = 86400; // 24 hours
 
 /**
  * Retrieve a URL for redirect, with Redis-first lookup and MongoDB fallback.
@@ -52,12 +52,12 @@ async function getRedirectUrl(slug, cacheClient, now = new Date()) {
     originalUrl: urlRecord.originalUrl,
     expiresAt: urlRecord.expiresAt ? urlRecord.expiresAt.toISOString() : null,
   };
-  await cacheClient.set(
-    cacheKey,
-    JSON.stringify(metadata),
-    "EX",
-    REDIRECT_CACHE_TTL_SECONDS,
-  ).catch((err) => {
+    await cacheClient.set(
+      cacheKey,
+      JSON.stringify(metadata),
+      "EX",
+      constants.CACHE.REDIRECT_TTL_SECONDS,
+    ).catch((err) => {
     logger.warn({ slug, err }, "Failed to repopulate redirect cache");
   });
 
