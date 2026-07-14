@@ -213,31 +213,6 @@ app.get("/:slug", async (req, res) => {
   }
 });
 
-const port = constants.APP.PORT;
-
-const server = app.listen(port, "0.0.0.0", () => {
-  logger.info({ port, env: env.NODE_ENV }, "API listening on 0.0.0.0");
-});
-
-// Graceful shutdown handlers
-process.on("uncaughtException", (err) => {
-  logger.error({ err }, "Uncaught exception - process exiting");
-  process.exit(1);
-});
-
-process.on("unhandledRejection", (reason, promise) => {
-  logger.error({ reason, promise }, "Unhandled rejection - process exiting");
-  process.exit(1);
-});
-
-server.on("error", (err) => {
-  logger.error({ err }, "Server error");
-});
-
-server.on("close", () => {
-  logger.info("Server closed");
-});
-
 mongoose
   .connect(env.MONGODB_URI, {
     maxPoolSize: 10,
@@ -247,7 +222,32 @@ mongoose
   })
   .then(() => {
     logger.info("MongoDB connected");
+    // START LISTENING AFTER MONGODB CONNECTS
+    const port = constants.APP.PORT;
+    const server = app.listen(port, "0.0.0.0", () => {
+      logger.info({ port, env: env.NODE_ENV }, "API listening on 0.0.0.0");
+    });
+
+    // Graceful shutdown handlers
+    process.on("uncaughtException", (err) => {
+      logger.error({ err }, "Uncaught exception - process exiting");
+      process.exit(1);
+    });
+    process.on("unhandledRejection", (reason, promise) => {
+      logger.error(
+        { reason, promise },
+        "Unhandled rejection - process exiting",
+      );
+      process.exit(1);
+    });
+    server.on("error", (err) => {
+      logger.error({ err }, "Server error");
+    });
+    server.on("close", () => {
+      logger.info("Server closed");
+    });
   })
   .catch((err) => {
-    logger.error({ err }, "Failed to connect to MongoDB (app still running)");
+    logger.error({ err }, "Failed to connect to MongoDB - exiting");
+    process.exit(1);
   });
