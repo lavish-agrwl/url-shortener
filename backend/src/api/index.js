@@ -204,14 +204,20 @@ app.get("/:slug", async (req, res) => {
 
 const port = constants.APP.PORT;
 
+const server = app.listen(port, "0.0.0.0", () => {
+  logger.info({ port, env: env.NODE_ENV }, "API listening on 0.0.0.0");
+});
+
 mongoose
-  .connect(env.MONGODB_URI)
+  .connect(env.MONGODB_URI, {
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+  })
   .then(() => {
-    app.listen(port, "0.0.0.0", () => {
-      logger.info({ port, env: env.NODE_ENV }, "API listening on 0.0.0.0");
-    });
+    logger.info("MongoDB connected");
   })
   .catch((err) => {
-    logger.error({ err }, "Failed to connect to MongoDB");
-    process.exit(1);
+    logger.error({ err }, "Failed to connect to MongoDB (app still running)");
   });
