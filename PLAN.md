@@ -64,7 +64,7 @@
 - [x] Configure Tailwind CSS and ShadCN UI components.
 - [x] Implement React Query hooks for URLs, analytics, and shortening with optimistic UI updates.
 - [x] Build the main dashboard with ShadCN Table for live link tracking and a shortening form.
-- [ ] Implement per-link analytics view with Chart.js and ShadCN metric cards.
+- [x] Implement per-link analytics view with Chart.js and ShadCN metric cards.
 - [ ] Add system health polling badge in the navigation bar.
 - [ ] Configure CORS in the backend to allow the frontend dev server.
 - [ ] Set up a production build pipeline to serve the React app via Express.
