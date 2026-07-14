@@ -152,10 +152,12 @@ app.get("/api/analytics/:slug", async (req, res) => {
 });
 
 app.get("/api/urls", async (req, res) => {
+  logger.info({ limit: req.query.limit, skip: req.query.skip }, "Fetching URLs list");
   try {
     const limit = parseInt(req.query.limit, 10) || 100;
     const skip = parseInt(req.query.skip, 10) || 0;
     const urls = await listUrls({ limit, skip });
+    logger.info({ count: urls.length }, "Successfully retrieved URLs list");
     res.json(urls);
   } catch (err) {
     logger.error({ limit: req.query.limit, skip: req.query.skip, err }, "Failed to retrieve URLs");
@@ -205,8 +207,8 @@ const port = constants.APP.PORT;
 mongoose
   .connect(env.MONGODB_URI)
   .then(() => {
-    app.listen(port, () => {
-      logger.info({ port, env: env.NODE_ENV }, "API listening");
+    app.listen(port, "0.0.0.0", () => {
+      logger.info({ port, env: env.NODE_ENV }, "API listening on 0.0.0.0");
     });
   })
   .catch((err) => {
