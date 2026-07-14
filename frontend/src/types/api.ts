@@ -4,6 +4,7 @@ export interface ShortUrl {
   originalUrl: string;
   createdAt: string;
   expiresAt: string | null;
+  totalClicks: number;
 }
 
 export interface ShortenRequest {

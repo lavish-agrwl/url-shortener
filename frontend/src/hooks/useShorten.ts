@@ -13,13 +13,14 @@ export function useShorten() {
       const previousUrls = queryClient.getQueryData<ShortUrl[]>(['urls']);
 
       // Create an optimistic URL object
-      const optimisticUrl: ShortUrl = {
-        slug: 'pending...',
-        shortUrl: '...',
-        originalUrl: newUrl.url,
-        createdAt: new Date().toISOString(),
-        expiresAt: newUrl.expiresAt || null,
-      };
+       const optimisticUrl: ShortUrl = {
+         slug: 'pending...',
+         shortUrl: '...',
+         originalUrl: newUrl.url,
+         createdAt: new Date().toISOString(),
+         expiresAt: newUrl.expiresAt || null,
+         totalClicks: 0,
+       };
 
       queryClient.setQueryData<ShortUrl[]>(['urls'], (old) => 
         old ? [optimisticUrl, ...old] : [optimisticUrl]
@@ -27,7 +28,7 @@ export function useShorten() {
 
       return { previousUrls };
     },
-    onError: (err, newUrl, context) => {
+    onError: (_err, _newUrl, context) => {
       if (context?.previousUrls) {
         queryClient.setQueryData(['urls'], context.previousUrls);
       }

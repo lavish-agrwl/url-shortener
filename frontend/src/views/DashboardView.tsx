@@ -34,7 +34,7 @@ export default function DashboardView() {
     shorten(
       { url, customSlug, expiresAt: expiresAt || undefined },
       {
-        onSuccess: (data) => {
+        onSuccess: () => {
           toast.success('URL shortened successfully!');
           setUrl('');
           setCustomSlug('');

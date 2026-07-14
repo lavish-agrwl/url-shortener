@@ -67,4 +67,4 @@
 - [x] Implement per-link analytics view with Chart.js and ShadCN metric cards.
 - [x] Add system health polling badge in the navigation bar.
 - [x] Configure CORS in the backend to allow the frontend dev server.
-- [ ] Set up a production build pipeline to serve the React app via Express.
+- [x] Set up a production build pipeline to serve the React app via Express.

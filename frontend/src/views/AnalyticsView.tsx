@@ -6,7 +6,7 @@ import {
   CardHeader, 
   CardTitle 
 } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button';
 import { useAnalytics } from '@/hooks/useAnalytics';
 import {
   Chart as ChartJS,
@@ -48,9 +48,9 @@ export default function AnalyticsView() {
     return (
       <div className="max-w-5xl mx-auto p-8 flex flex-col items-center justify-center h-screen gap-4">
         <div className="text-destructive font-medium">Failed to load analytics</div>
-        <Button asChild>
-          <Link to="/">Return to Dashboard</Link>
-        </Button>
+        <Link to="/" className={buttonVariants({ variant: 'default' })}>
+          Return to Dashboard
+        </Link>
       </div>
     );
   }
@@ -84,9 +84,9 @@ export default function AnalyticsView() {
       <header className="flex items-center justify-between">
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/">← Back</Link>
-            </Button>
+            <Link to="/" className={buttonVariants({ variant: 'ghost', size: 'sm' })}>
+              ← Back
+            </Link>
             <h1 className="text-3xl font-bold tracking-tight">Analytics: {slug}</h1>
           </div>
           <p className="text-muted-foreground ml-20">Performance tracking for your short link</p>

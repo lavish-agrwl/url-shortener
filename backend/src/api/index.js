@@ -52,10 +52,10 @@ if (env.NODE_ENV === "production") {
 
 app.use(morgan(env.NODE_ENV === "development" ? "dev" : "combined"));
 
-app.use("/dashboard", express.static(path.join(__dirname, "../../dashboard")));
+app.use("/dashboard", express.static(path.join(__dirname, "../../frontend/dist")));
 
-app.get("/dashboard", (req, res) => {
-  res.sendFile(path.join(__dirname, "../../dashboard/index.html"));
+app.get("/dashboard*", (req, res) => {
+  res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
 });
 
 app.get("/", (req, res) => res.json({ status: "ok" }));
