@@ -1,6 +1,6 @@
 require('dotenv').config();
 
-const requiredVariables = ['MONGODB_URI', 'REDIS_URL', 'BASE_URL'];
+const requiredVariables = ['MONGODB_URI', 'REDIS_URL', 'BASE_URL', 'FRONTEND_URL'];
 const allowedNodeEnvs = new Set(['development', 'test', 'production']);
 
 function validateRequiredValue(name, value) {

@@ -44,11 +44,11 @@ app.use(helmet());
 app.use(express.json());
 
 if (env.NODE_ENV === "production") {
-  app.use(cors({ origin: env.BASE_URL }));
+  app.use(cors({ origin: env.FRONTEND_URL }));
 } else {
   app.use(
     cors({
-      origin: ["http://localhost:5173", env.BASE_URL],
+      origin: ["http://localhost:5173", env.FRONTEND_URL],
       credentials: true,
     }),
   );
