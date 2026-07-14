@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '../lib/api';
-import { HealthStatus } from '../types/api';
+import type { HealthStatus } from '../types/api';
 
 export function useHealth() {
   return useQuery<HealthStatus>({
