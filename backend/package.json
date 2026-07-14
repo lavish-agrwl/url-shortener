@@ -9,6 +9,7 @@
   },
   "scripts": {
     "start": "node src/api/index.js",
+    "start:worker": "node src/api/worker.js",
     "test": "jest",
     "lint": "eslint .",
     "seed": "node scripts/seed.js"

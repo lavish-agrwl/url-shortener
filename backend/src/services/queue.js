@@ -106,8 +106,8 @@ async function enqueueClick(queue, slug, req, timestamp = new Date()) {
         country,
       });
 
-      queue.add("click", payload, {
-        jobId,
+      queue.add("click", payload, { jobId }).catch((err) => {
+        logger.error({ slug, jobId, ipHash }, err, "Failed to enqueue click event");
       });
     } catch (err) {
       // Queue enqueue failure is non-critical; log and continue

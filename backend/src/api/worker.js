@@ -2,14 +2,12 @@ const { loadEnv } = require("../config/env");
 const { CLICK_EVENTS_QUEUE } = require("../services/queue");
 const { createClickBatchWorker } = require("../services/clickBatchWorker");
 const mongoose = require("mongoose");
+const IORedis = require("ioredis");
 
 const env = loadEnv(process.env);
-const redisUrl = new URL(env.REDIS_URL);
-const redisConnection = {
-  host: redisUrl.hostname || "127.0.0.1",
-  port: parseInt(redisUrl.port || "6379", 10),
+const redisConnection = new IORedis(env.REDIS_URL, {
   maxRetriesPerRequest: null,
-};
+});
 
 async function start() {
   try {

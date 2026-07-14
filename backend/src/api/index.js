@@ -4,6 +4,7 @@ const cors = require("cors");
 const morgan = require("morgan");
 const mongoose = require("mongoose");
 const path = require("path");
+const IORedis = require("ioredis");
 
 const { loadEnv } = require("../config/env");
 const constants = require("../config/constants");
@@ -31,13 +32,10 @@ const env = loadEnv(process.env);
 
 const app = express();
 const redisClient = getRedisClient(env.REDIS_URL);
-// Extract Redis connection from URL for BullMQ
-const redisUrl = new URL(env.REDIS_URL);
-const redisConnection = {
-  host: redisUrl.hostname || constants.REDIS.DEFAULT_HOST,
-  port: parseInt(redisUrl.port || constants.REDIS.DEFAULT_PORT, 10),
-  ...constants.REDIS.CONNECTION_OPTIONS,
-};
+const redisConnection = new IORedis(
+  env.REDIS_URL,
+  constants.REDIS.CONNECTION_OPTIONS,
+);
 const { clickQueue, clickDlq } = getClickQueues(redisConnection);
 
 app.use(helmet());
