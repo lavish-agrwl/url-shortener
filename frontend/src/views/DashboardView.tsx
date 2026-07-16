@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { useUrls } from '@/hooks/useUrls';
 import { useShorten } from '@/hooks/useShorten';
 import { Link } from 'react-router-dom';
+import { ArrowSquareOutIcon } from '@phosphor-icons/react';
 
 export default function DashboardView() {
   const { data: urls, isLoading, isError } = useUrls();
@@ -23,6 +24,10 @@ export default function DashboardView() {
   const [url, setUrl] = useState('');
   const [customSlug, setCustomSlug] = useState('');
   const [expiresAt, setExpiresAt] = useState('');
+
+  const openShortLink = (slug: string) => {
+    window.open(`/${encodeURIComponent(slug)}`, '_blank', 'noopener,noreferrer');
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -126,6 +131,17 @@ export default function DashboardView() {
                       urls.map((link) => (
                         <TableRow key={link.slug}>
                           <TableCell className="font-medium">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon-xs"
+                              className="mr-2"
+                              onClick={() => openShortLink(link.slug)}
+                              aria-label={`Open ${link.slug}`}
+                              title={`Open ${link.slug}`}
+                            >
+                              <ArrowSquareOutIcon aria-hidden="true" />
+                            </Button>
                             <Link 
                               to={`/analytics/${link.slug}`} 
                               className="text-primary hover:underline"

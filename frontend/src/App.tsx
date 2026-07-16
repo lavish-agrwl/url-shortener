@@ -3,6 +3,7 @@ import { Toaster } from '@/components/ui/sonner';
 import Navigation from '@/components/Navigation';
 import DashboardView from './views/DashboardView';
 import AnalyticsView from './views/AnalyticsView';
+import RedirectView from './views/RedirectView';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<DashboardView />} />
         <Route path="/analytics/:slug" element={<AnalyticsView />} />
+        <Route path="/:slug" element={<RedirectView />} />
       </Routes>
     </div>
   );
